@@ -281,11 +281,12 @@ unsigned int parseHaving(size_t current, size_t index, char *query, Tokens *toke
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
                 .text = token};
-                if(strcasecmp(token,"having")){
-                    tokenToAdd = (Token){
-                .type = TOKEN_HAVING,
-                .text = token};
-                }
+            if (strcasecmp(token, "having"))
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_HAVING,
+                    .text = token};
+            }
             if (strcasecmp(token, "(") == 0)
             {
                 tokenToAdd = (Token){
