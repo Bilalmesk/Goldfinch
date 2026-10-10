@@ -60,8 +60,16 @@ typedef struct Tokens
 } Tokens;
 char *normaliseSpacing(char *query);
 Tokens *getTokens(char *query);
+Tokens *getTokenstemp(char *query);
 unsigned int parsePrefixes(size_t index, char *query, Prefixes *prefixes);
+unsigned int parsePrefixestemp(size_t index, char *query, Prefixes *prefixes);
 unsigned int parseSelect(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *Prefixes);
+unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *prefixes);
+unsigned int parseGroupBy(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseHaving(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseOffset(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseLimit(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseOrderBy(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
 bool startsWith(char *token, char start);
 bool endsWith(char *token, char end);
 bool isMathOperator(const char *token);
