@@ -14,8 +14,21 @@ typedef enum
     TOKEN_EOF,
     TOKEN_ERROR,
     TOKEN_GROUP_BY,
+    TOKEN_LIMIT,
     TOKEN_LPAREN,
-    TOKEN_RPAREN
+    TOKEN_RPAREN,
+    TOKEN_GREATER,
+    TOKEN_GREATER_EQUAL,
+    TOKEN_LESS,
+    TOKEN_LESS_EQUAL,
+    TOKEN_EQUAL,
+    TOKEN_NOT_EQUAL,
+    TOKEN_PLUS,
+    TOKEN_MINUS,
+    TOKEN_MULTIPLY,
+    TOKEN_DIVIDE,
+    TOKEN_MODULO,
+    TOKEN_NUMBER
 } TokenType;
 typedef struct Prefix
 {
@@ -40,12 +53,15 @@ typedef struct Tokens
     size_t size;
     size_t capacity;
 } Tokens;
-
+char *normaliseSpacing(char *query);
 Tokens *getTokens(char *query);
 unsigned int parsePrefixes(size_t index, char *query, Prefixes *prefixes);
 unsigned int parseSelect(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *Prefixes);
 bool startsWith(char *token, char start);
 bool endsWith(char *token, char end);
+bool isMathOperator(const char *token);
+bool isNumberToken(const char *token);
+TokenType getOperatorType(const char *token);
 Tokens *createTokens(size_t capacity);
 void addToTokens(Token token, Tokens *tokens);
 bool tokensArrayGrow(Tokens *tokens);
@@ -62,5 +78,6 @@ void printTokens(const Tokens *tokens);
 void freeTokens(Tokens *tokens);
 char *qnameToUri(char *qname, Prefixes *prefixes);
 bool isItQname(char *qname);
+void removeParentheses(char *text);
 
 #endif

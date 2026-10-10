@@ -115,6 +115,24 @@ unsigned int parseSelect(unsigned int current, unsigned int index, char *query, 
                     .type = TOKEN_WHERE,
                     .text = token};
             }
+            if (strcasecmp("LIMIT", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_LIMIT,
+                    .text = token};
+            }
+            if (isMathOperator(token))
+            {
+                tokenToAdd = (Token){
+                    .type = getOperatorType(token),
+                    .text = token};
+            }
+            if (isNumberToken(token))
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_NUMBER,
+                    .text = token};
+            }
             if (startsWith(token, '?'))
             {
                 tokenToAdd = (Token){
@@ -161,6 +179,86 @@ unsigned int parseSelect(unsigned int current, unsigned int index, char *query, 
         }
     }
     return index;
+}
+bool isMathOperator(const char *token)
+{
+    if (token == NULL)
+    {
+        return false;
+    }
+
+    return getOperatorType(token) != TOKEN_ERROR;
+}
+bool isNumberToken(const char *token)
+{
+    if (token == NULL || token[0] == '\0')
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < strlen(token); i++)
+    {
+        if (!isdigit((unsigned char)token[i]))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+TokenType getOperatorType(const char *token)
+{
+    if (token == NULL)
+    {
+        return TOKEN_ERROR;
+    }
+
+    if (strcmp(token, ">") == 0)
+    {
+        return TOKEN_GREATER;
+    }
+    if (strcmp(token, ">=") == 0)
+    {
+        return TOKEN_GREATER_EQUAL;
+    }
+    if (strcmp(token, "<") == 0)
+    {
+        return TOKEN_LESS;
+    }
+    if (strcmp(token, "<=") == 0)
+    {
+        return TOKEN_LESS_EQUAL;
+    }
+    if (strcmp(token, "=") == 0)
+    {
+        return TOKEN_EQUAL;
+    }
+    if (strcmp(token, "!=") == 0)
+    {
+        return TOKEN_NOT_EQUAL;
+    }
+    if (strcmp(token, "+") == 0)
+    {
+        return TOKEN_PLUS;
+    }
+    if (strcmp(token, "-") == 0)
+    {
+        return TOKEN_MINUS;
+    }
+    if (strcmp(token, "*") == 0)
+    {
+        return TOKEN_MULTIPLY;
+    }
+    if (strcmp(token, "/") == 0)
+    {
+        return TOKEN_DIVIDE;
+    }
+    if (strcmp(token, "%") == 0)
+    {
+        return TOKEN_MODULO;
+    }
+
+    return TOKEN_ERROR;
 }
 bool startsWith(char *token, char start)
 {
@@ -404,10 +502,36 @@ const char *tokenTypeName(TokenType type)
         return "TOKEN_ERROR";
     case TOKEN_GROUP_BY:
         return "TOKEN_GROUP_BY";
+    case TOKEN_LIMIT:
+        return "TOKEN_LIMIT";
     case TOKEN_LPAREN:
         return "TOKEN_LPAREN";
     case TOKEN_RPAREN:
         return "TOKEN_RPAREN";
+    case TOKEN_GREATER:
+        return "TOKEN_GREATER";
+    case TOKEN_GREATER_EQUAL:
+        return "TOKEN_GREATER_EQUAL";
+    case TOKEN_LESS:
+        return "TOKEN_LESS";
+    case TOKEN_LESS_EQUAL:
+        return "TOKEN_LESS_EQUAL";
+    case TOKEN_EQUAL:
+        return "TOKEN_EQUAL";
+    case TOKEN_NOT_EQUAL:
+        return "TOKEN_NOT_EQUAL";
+    case TOKEN_PLUS:
+        return "TOKEN_PLUS";
+    case TOKEN_MINUS:
+        return "TOKEN_MINUS";
+    case TOKEN_MULTIPLY:
+        return "TOKEN_MULTIPLY";
+    case TOKEN_DIVIDE:
+        return "TOKEN_DIVIDE";
+    case TOKEN_MODULO:
+        return "TOKEN_MODULO";
+    case TOKEN_NUMBER:
+        return "TOKEN_NUMBER";
 
     default:
         return "TOKEN_UNKNOWN";
@@ -496,3 +620,73 @@ void freeTokens(Tokens *tokens)
     free(tokens);
     tokens == NULL;
 };
+#include <string.h>
+
+void removeParentheses(char *text)
+{
+    if (text == NULL)
+    {
+        return;
+    }
+
+    size_t len = strlen(text);
+
+    while (len > 0 && (text[0] == '(' || text[0] == ')'))
+    {
+        memmove(text, text + 1, len);
+        len--;
+        text[len] = '\0';
+    }
+
+    while (len > 0 && (text[len - 1] == '(' || text[len - 1] == ')'))
+    {
+        text[len - 1] = '\0';
+        len--;
+    }
+}
+
+char *normaliseSpacing(char *query)
+{
+    if (query == NULL)
+    {
+        return NULL;
+    }
+
+    size_t len = strlen(query);
+    char *out = malloc((len * 2 + 1) * sizeof(*out));
+    if (out == NULL)
+    {
+        return NULL;
+    }
+
+    size_t j = 0;
+
+    for (size_t i = 0; i < len; i++)
+    {
+        char c = query[i];
+
+        if (c == '{' || c == '}' || c == '(' || c == ')')
+        {
+            if (j > 0 && out[j - 1] != ' ')
+            {
+                out[j++] = ' ';
+            }
+
+            out[j++] = c;
+
+            if (i + 1 < len && query[i + 1] != ' ' &&
+                query[i + 1] != '{' && query[i + 1] != '}' &&
+                query[i + 1] != '(' && query[i + 1] != ')')
+            {
+                out[j++] = ' ';
+            }
+        }
+        else
+        {
+            out[j++] = c;
+        }
+    }
+
+    out[j] = '\0';
+    return out;
+}

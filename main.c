@@ -11,6 +11,9 @@ Tokens *getTokenstemp(char *query);
 unsigned int parsePrefixestemp(size_t index, char *query, Prefixes *prefixes);
 unsigned int parseGroupBy(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
 unsigned int parseHaving(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseOffset(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseLimit(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseOrderBy(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
 unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *Prefixes);
 int main(void)
 {
@@ -24,8 +27,8 @@ int main(void)
         " ORDER BY DESC(?age)"
         " LIMIT 10"
         " OFFSET 0";
-
-    getTokenstemp(query);
+    char *normalised = normaliseSpacing(query);
+    getTokenstemp(normalised);
     return 0;
 }
 Tokens *getTokenstemp(char *query)
@@ -61,11 +64,20 @@ Tokens *getTokenstemp(char *query)
             {
                 index = parseHaving(current, index, query, tokens, prefixes);
             }
-            else if(strcasecmp(token, "limit")){
+            else if (strcasecmp(token, "limit") == 0)
 
-            }else if(strcasecmp(token, "offset")){
-                
+            {
+                index = parseLimit(current, index, query, tokens, prefixes);
             }
+            /*
+            else if (strcasecmp(token, "offset") == 0)
+            {
+                index = parseOffset(current, index, query, tokens, prefixes);
+            }
+            else if (strcasecmp(token, "order") == 0)
+            {
+                index = parseOrderBy(current, index, query, tokens, prefixes);
+            } */
 
             current = index;
         }
@@ -268,7 +280,32 @@ unsigned int parseHaving(size_t current, size_t index, char *query, Tokens *toke
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
                 .text = token};
+            if (strcasecmp(token, "(") == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_LPAREN,
+                    .text = token};
+            }
+            else if (strcasecmp(token, ")") == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_RPAREN,
+                    .text = token};
+            }
+            else if (startsWith(token, '?'))
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_VARIABLE,
+                    .text = token};
+            }
+            else if (isMathOperator(token))
+            {
+                tokenToAdd = (Token){
+                    .type = getOperatorType(token),
+                    .text = token};
+            }
             addToTokens(tokenToAdd, tokens);
+
             current = index;
             if (endsWith(token, ')'))
             {
@@ -277,3 +314,44 @@ unsigned int parseHaving(size_t current, size_t index, char *query, Tokens *toke
         }
     }
 }
+unsigned int parseOffset(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
+{
+
+    return index;
+};
+unsigned int parseLimit(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
+{
+    int foundLimit = 1;
+    for (index; index < strlen(query) + 1; index++)
+    {
+        if (query[index] == ' ' || query[index] == '}')
+        {
+            size_t length = index - current;
+            char *token = malloc((length + 1) * sizeof(*token));
+            memcpy(token, query + current, length);
+            token[length] = '\0';
+            printf("token: %s\n", token);
+            token = trimWhitespace(token);
+            Token tokenToAdd = {
+                .type = TOKEN_ERROR,
+                .text = token};
+            if (strcasecmp(token, "limit") == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_LIMIT,
+                    .text = token};
+                foundLimit++;
+            }
+            else if (foundLimit > 1)
+                {tokenToAdd = (Token){
+                        .type = TOKEN_LIMIT,
+                        .text = token};}
+                    
+        }
+    }
+    return index;
+};
+unsigned int parseOrderBy(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
+{
+    return index;
+};
