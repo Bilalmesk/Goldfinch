@@ -14,7 +14,10 @@ typedef enum
     TOKEN_EOF,
     TOKEN_ERROR,
     TOKEN_GROUP_BY,
+    TOKEN_HAVING,
+    TOKEN_ORDER_BY,
     TOKEN_LIMIT,
+    TOKEN_OFFSET,
     TOKEN_LPAREN,
     TOKEN_RPAREN,
     TOKEN_GREATER,
@@ -28,7 +31,9 @@ typedef enum
     TOKEN_MULTIPLY,
     TOKEN_DIVIDE,
     TOKEN_MODULO,
-    TOKEN_NUMBER
+    TOKEN_NUMBER,
+    TOKEN_ASC,
+    TOKEN_DESC
 } TokenType;
 typedef struct Prefix
 {

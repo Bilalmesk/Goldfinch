@@ -121,6 +121,36 @@ unsigned int parseSelect(unsigned int current, unsigned int index, char *query, 
                     .type = TOKEN_LIMIT,
                     .text = token};
             }
+            if (strcasecmp("HAVING", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_HAVING,
+                    .text = token};
+            }
+            if (strcasecmp("ORDER", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_ORDER_BY,
+                    .text = token};
+            }
+            if (strcasecmp("OFFSET", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_OFFSET,
+                    .text = token};
+            }
+            if (strcasecmp("ASC", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_ASC,
+                    .text = token};
+            }
+            if (strcasecmp("DESC", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_DESC,
+                    .text = token};
+            }
             if (isMathOperator(token))
             {
                 tokenToAdd = (Token){
@@ -502,8 +532,14 @@ const char *tokenTypeName(TokenType type)
         return "TOKEN_ERROR";
     case TOKEN_GROUP_BY:
         return "TOKEN_GROUP_BY";
+    case TOKEN_HAVING:
+        return "TOKEN_HAVING";
+    case TOKEN_ORDER_BY:
+        return "TOKEN_ORDER_BY";
     case TOKEN_LIMIT:
         return "TOKEN_LIMIT";
+    case TOKEN_OFFSET:
+        return "TOKEN_OFFSET";
     case TOKEN_LPAREN:
         return "TOKEN_LPAREN";
     case TOKEN_RPAREN:
@@ -532,6 +568,10 @@ const char *tokenTypeName(TokenType type)
         return "TOKEN_MODULO";
     case TOKEN_NUMBER:
         return "TOKEN_NUMBER";
+    case TOKEN_ASC:
+        return "TOKEN_ASC";
+    case TOKEN_DESC:
+        return "TOKEN_DESC";
 
     default:
         return "TOKEN_UNKNOWN";
