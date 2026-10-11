@@ -9,11 +9,12 @@
 
 Tokens *getTokenstemp(char *query);
 unsigned int parsePrefixestemp(size_t index, char *query, Prefixes *prefixes);
-unsigned int parseGroupBy(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
-unsigned int parseHaving(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
-unsigned int parseOffset(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
-unsigned int parseLimit(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
-unsigned int parseOrderBy(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseGroupBytemp(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseHavingtemp(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseOffsettemp(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseLimittemp(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseOrderBytemp(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix);
+unsigned int parseOptionaltemp(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *prefixes);
 unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *Prefixes);
 int main(void)
 {
@@ -27,8 +28,22 @@ int main(void)
         " ORDER BY DESC(?age)"
         " LIMIT 10"
         " OFFSET 0";
+    char advancedQuery[] =
+        "PREFIX foaf: <http://xmlns.com/foaf/0.1/> "
+        "SELECT DISTINCT ?person (COUNT(?friend) AS ?friendCount) "
+        "WHERE { "
+        "?person foaf:name ?name . "
+        "OPTIONAL { ?person foaf:knows ?friend . } "
+        "} "
+        "GROUP BY ?person "
+        "HAVING (COUNT(?friend) > 0) "
+        "ORDER BY DESC(?friendCount) "
+        "LIMIT 10 "
+        "OFFSET 0";
     char *normalised = normaliseSpacing(query);
     getTokenstemp(normalised);
+    char *advancedNormalised = normaliseSpacing(advancedQuery);
+    getTokenstemp(advancedNormalised);
 
     return 0;
 }
@@ -46,9 +61,7 @@ Tokens *getTokenstemp(char *query)
             char *token = malloc((length + 1) * sizeof(*token));
             memcpy(token, query + current, length);
             token[length] = '\0';
-
             trimWhitespace(token);
-
             if (strcasecmp(token, "prefix") == 0)
             {
                 index = parsePrefixestemp(index, query, prefixes);
@@ -161,19 +174,37 @@ unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *que
                     .type = TOKEN_SELECT,
                     .text = token};
             }
-            if (strcasecmp("WHERE", token) == 0)
+            else if (strcasecmp(token, "distinct") == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_DISTINCT,
+                    .text = token};
+            }
+            else if (strcasecmp(token, "count") == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_COUNT,
+                    .text = token};
+            }
+            else if (strcasecmp("WHERE", token) == 0)
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_WHERE,
                     .text = token};
             }
-            if (startsWith(token, '?'))
+            else if (strcasecmp("optional", token) == 0)
+            {
+                index = parseOptionaltemp(current, index, query, tokens, prefixes);
+                current = index;
+                continue;
+            }
+            else if (startsWith(token, '?'))
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_VARIABLE,
                     .text = token};
             }
-            if (startsWith(token, '<'))
+            else if (startsWith(token, '<'))
             {
                 remove_angle_brackets(token);
 
@@ -181,20 +212,19 @@ unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *que
                     .type = TOKEN_IRI,
                     .text = token};
             }
-            if (startsWith(token, '.'))
+            else if (startsWith(token, '.'))
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_DOT,
                     .text = token};
             }
-            if (startsWith(token, '{'))
+            else if (startsWith(token, '{'))
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_LBRACE,
                     .text = token};
             }
-
-            if (isItQname(token))
+            else if (isItQname(token))
             {
                 char *iri = qnameToUri(token, prefixes);
 
@@ -211,14 +241,17 @@ unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *que
 
                 return index;
             }
-            addToTokens(tokenToAdd, tokens);
+            if (strcasecmp("token", token) != 0)
+            {
+                addToTokens(tokenToAdd, tokens);
+            }
             current = index;
         }
     }
     return index;
 }
 
-unsigned int parseGroupBy(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
+unsigned int parseGroupBytemp(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
 {
     int byExistence = 1;
     for (index; index < strlen(query) + 1; index++)
@@ -264,7 +297,7 @@ unsigned int parseGroupBy(size_t current, size_t index, char *query, Tokens *tok
         }
     };
 }
-unsigned int parseHaving(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
+unsigned int parseHavingtemp(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
 {
     /* HAVING (?age > 30)*/
     for (index; index < strlen(query) + 1; index++)
@@ -321,7 +354,7 @@ unsigned int parseHaving(size_t current, size_t index, char *query, Tokens *toke
         }
     }
 }
-unsigned int parseOffset(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
+unsigned int parseOffsettemp(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
 {
 
     for (index; index < strlen(query) + 1; index++)
@@ -359,7 +392,7 @@ unsigned int parseOffset(size_t current, size_t index, char *query, Tokens *toke
     }
     return index;
 };
-unsigned int parseLimit(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
+unsigned int parseLimittemp(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
 {
 
     for (index; index < strlen(query) + 1; index++)
@@ -397,7 +430,7 @@ unsigned int parseLimit(size_t current, size_t index, char *query, Tokens *token
     }
     return index;
 };
-unsigned int parseOrderBy(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
+unsigned int parseOrderBytemp(size_t current, size_t index, char *query, Tokens *tokens, Prefixes *prefix)
 {
     for (index; index < strlen(query) + 1; index++)
     {
@@ -409,7 +442,6 @@ unsigned int parseOrderBy(size_t current, size_t index, char *query, Tokens *tok
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
-
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
                 .text = token};
@@ -465,6 +497,86 @@ unsigned int parseOrderBy(size_t current, size_t index, char *query, Tokens *tok
             {
                 return index;
             }
+            current = index;
+        }
+    }
+};
+unsigned int parseOptionaltemp(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *prefixes)
+{
+    for (index; index < strlen(query) + 1; index++)
+    {
+        if (query[index] == ' ' || query[index] == '\0')
+        {
+            size_t length = index - current;
+            char *token = malloc((length + 1) * sizeof(*token));
+            memcpy(token, query + current, length);
+            token[length] = '\0';
+            printf("token: %s\n", token);
+            token = trimWhitespace(token);
+            Token tokenToAdd = {
+                .type = TOKEN_ERROR,
+                .text = token};
+            if (strcasecmp("optional", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_OPTIONAL,
+                    .text = token};
+            }
+            else if (startsWith(token, '?'))
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_VARIABLE,
+                    .text = token};
+            }
+            else if (startsWith(token, '<'))
+            {
+                remove_angle_brackets(token);
+
+                tokenToAdd = (Token){
+                    .type = TOKEN_IRI,
+                    .text = token};
+            }
+            else if (startsWith(token, '.'))
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_DOT,
+                    .text = token};
+            }
+            else if (startsWith(token, '{'))
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_LBRACE,
+                    .text = token};
+            }
+
+            else if (isItQname(token))
+            {
+                char *iri = qnameToUri(token, prefixes);
+
+                tokenToAdd = (Token){
+                    .type = TOKEN_IRI,
+                    .text = iri};
+            }
+            else if (endsWith(token, '}'))
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_RBRACE,
+                    .text = token};
+                addToTokens(tokenToAdd, tokens);
+
+                return index;
+            }
+            else if (startsWith(token, '?'))
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_VARIABLE,
+                    .text = token};
+            }
+            if (endsWith(token, '}'))
+            {
+                return index;
+            }
+            addToTokens(tokenToAdd, tokens);
             current = index;
         }
     }

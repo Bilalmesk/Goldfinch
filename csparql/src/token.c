@@ -6,7 +6,7 @@
 #include <stdio.h>
 #define TOKENS_CAPACITY 10
 
-Tokens *getTokenstemp(char *query)
+Tokens *getTokens(char *query)
 {
     Prefixes *prefixes = createPrefixes(5);
     Tokens *tokens = createTokens(10);
@@ -25,11 +25,11 @@ Tokens *getTokenstemp(char *query)
 
             if (strcasecmp(token, "prefix") == 0)
             {
-                index = parsePrefixestemp(index, query, prefixes);
+                index = parsePrefixes(index, query, prefixes);
             }
             else if (strcasecmp(token, "select") == 0)
             {
-                index = parseSelecttemp(current, index, query, tokens, prefixes);
+                index = parseSelect(current, index, query, tokens, prefixes);
             }
             else if (strcasecmp(token, "group") == 0)
             {
@@ -58,7 +58,7 @@ Tokens *getTokenstemp(char *query)
     printTokens(tokens);
     return tokens;
 }
-unsigned int parsePrefixestemp(size_t index, char *query, Prefixes *prefixes)
+unsigned int parsePrefixes(size_t index, char *query, Prefixes *prefixes)
 {
     size_t current = index;
     Prefix prefix;
@@ -109,7 +109,7 @@ unsigned int parsePrefixestemp(size_t index, char *query, Prefixes *prefixes)
     }
     return index;
 }
-unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *prefixes)
+unsigned int parseSelect(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *prefixes)
 {
 
     for (index; index < strlen(query) + 1; index++)
@@ -132,19 +132,37 @@ unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *que
                     .type = TOKEN_SELECT,
                     .text = token};
             }
-            if (strcasecmp("WHERE", token) == 0)
+            else if (strcasecmp("DISTINCT", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_DISTINCT,
+                    .text = token};
+            }
+            else if (strcasecmp("COUNT", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_COUNT,
+                    .text = token};
+            }
+            else if (strcasecmp("WHERE", token) == 0)
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_WHERE,
                     .text = token};
             }
-            if (startsWith(token, '?'))
+            else if (strcasecmp("OPTIONAL", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_OPTIONAL,
+                    .text = token};
+            }
+            else if (startsWith(token, '?'))
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_VARIABLE,
                     .text = token};
             }
-            if (startsWith(token, '<'))
+            else if (startsWith(token, '<'))
             {
                 remove_angle_brackets(token);
 
@@ -152,20 +170,19 @@ unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *que
                     .type = TOKEN_IRI,
                     .text = token};
             }
-            if (startsWith(token, '.'))
+            else if (startsWith(token, '.'))
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_DOT,
                     .text = token};
             }
-            if (startsWith(token, '{'))
+            else if (startsWith(token, '{'))
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_LBRACE,
                     .text = token};
             }
-
-            if (isItQname(token))
+            else if (isItQname(token))
             {
                 char *iri = qnameToUri(token, prefixes);
 
@@ -434,7 +451,10 @@ unsigned int parseOrderBy(size_t current, size_t index, char *query, Tokens *tok
     }
 }
 
-Tokens *getTokens(char *query)
+static unsigned int legacyParsePrefixes(size_t index, char *query, Prefixes *prefixes);
+static unsigned int legacyParseSelect(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *prefixes);
+
+static Tokens *legacyGetTokens(char *query)
 {
     Prefixes *prefixes = createPrefixes(5);
     Tokens *tokens = createTokens(10);
@@ -451,11 +471,11 @@ Tokens *getTokens(char *query)
 
             if (strcasecmp(token, "prefix") == 0)
             {
-                index = parsePrefixes(index, query, prefixes);
+                index = legacyParsePrefixes(index, query, prefixes);
             }
             if (strcasecmp(token, "select") == 0)
             {
-                index = parseSelect(current, index, query, tokens, prefixes);
+                index = legacyParseSelect(current, index, query, tokens, prefixes);
             }
 
             current = index;
@@ -463,7 +483,7 @@ Tokens *getTokens(char *query)
     }
     return tokens;
 }
-unsigned int parsePrefixes(size_t index, char *query, Prefixes *prefixes)
+static unsigned int legacyParsePrefixes(size_t index, char *query, Prefixes *prefixes)
 {
     size_t current = index;
     Prefix prefix;
@@ -514,7 +534,7 @@ unsigned int parsePrefixes(size_t index, char *query, Prefixes *prefixes)
     }
     return index;
 }
-unsigned int parseSelect(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *prefixes)
+static unsigned int legacyParseSelect(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *prefixes)
 {
 
     for (index; index < strlen(query) + 1; index++)
@@ -535,6 +555,18 @@ unsigned int parseSelect(unsigned int current, unsigned int index, char *query, 
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_SELECT,
+                    .text = token};
+            }
+            if (strcasecmp("DISTINCT", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_DISTINCT,
+                    .text = token};
+            }
+            if (strcasecmp("COUNT", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_COUNT,
                     .text = token};
             }
             if (strcasecmp("WHERE", token) == 0)
@@ -1000,6 +1032,12 @@ const char *tokenTypeName(TokenType type)
         return "TOKEN_ASC";
     case TOKEN_DESC:
         return "TOKEN_DESC";
+    case TOKEN_OPTIONAL:
+        return "TOKEN_OPTIONAL";
+    case TOKEN_DISTINCT:
+        return "TOKEN_DISTINCT";
+    case TOKEN_COUNT:
+        return "TOKEN_COUNT";
 
     default:
         return "TOKEN_UNKNOWN";
