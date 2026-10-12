@@ -22,6 +22,12 @@ Tokens *getTokens(char *query)
             token[length] = '\0';
 
             trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
 
             if (strcasecmp(token, "prefix") == 0)
             {
@@ -224,6 +230,12 @@ unsigned int parseGroupBy(size_t current, size_t index, char *query, Tokens *tok
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
 
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
@@ -267,6 +279,12 @@ unsigned int parseHaving(size_t current, size_t index, char *query, Tokens *toke
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
 
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
@@ -323,6 +341,12 @@ unsigned int parseOffset(size_t current, size_t index, char *query, Tokens *toke
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
                 .text = token};
@@ -360,6 +384,12 @@ unsigned int parseLimit(size_t current, size_t index, char *query, Tokens *token
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
                 .text = token};
