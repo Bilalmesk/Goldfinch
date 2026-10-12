@@ -36,7 +36,8 @@ typedef enum
     TOKEN_DESC,
     TOKEN_OPTIONAL,
     TOKEN_DISTINCT,
-    TOKEN_COUNT
+    TOKEN_COUNT,
+    TOKEN_AS
 } TokenType;
 typedef struct Prefix
 {

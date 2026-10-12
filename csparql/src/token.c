@@ -144,6 +144,12 @@ unsigned int parseSelect(unsigned int current, unsigned int index, char *query, 
                     .type = TOKEN_COUNT,
                     .text = token};
             }
+            else if (strcasecmp("AS", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_AS,
+                    .text = token};
+            }
             else if (strcasecmp("WHERE", token) == 0)
             {
                 tokenToAdd = (Token){
@@ -567,6 +573,12 @@ static unsigned int legacyParseSelect(unsigned int current, unsigned int index, 
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_COUNT,
+                    .text = token};
+            }
+            if (strcasecmp("AS", token) == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_AS,
                     .text = token};
             }
             if (strcasecmp("WHERE", token) == 0)
@@ -1038,6 +1050,8 @@ const char *tokenTypeName(TokenType type)
         return "TOKEN_DISTINCT";
     case TOKEN_COUNT:
         return "TOKEN_COUNT";
+    case TOKEN_AS:
+        return "TOKEN_AS";
 
     default:
         return "TOKEN_UNKNOWN";

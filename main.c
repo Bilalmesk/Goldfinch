@@ -40,8 +40,7 @@ int main(void)
         "ORDER BY DESC(?friendCount) "
         "LIMIT 10 "
         "OFFSET 0";
-    char *normalised = normaliseSpacing(query);
-    getTokenstemp(normalised);
+
     char *advancedNormalised = normaliseSpacing(advancedQuery);
     getTokenstemp(advancedNormalised);
 
@@ -62,6 +61,12 @@ Tokens *getTokenstemp(char *query)
             memcpy(token, query + current, length);
             token[length] = '\0';
             trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
             if (strcasecmp(token, "prefix") == 0)
             {
                 index = parsePrefixestemp(index, query, prefixes);
@@ -162,8 +167,14 @@ unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *que
             char *token = malloc((length + 1) * sizeof(*token));
             memcpy(token, query + current, length);
             token[length] = '\0';
-            printf("token: %s\n", token);
+            printf("token: from inside select parser %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
                 .text = token};
@@ -178,6 +189,24 @@ unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *que
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_DISTINCT,
+                    .text = token};
+            }
+            else if (strcasecmp(token, "(") == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_LPAREN,
+                    .text = token};
+            }
+            else if (strcasecmp(token, ")") == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_RPAREN,
+                    .text = token};
+            }
+            else if (strcasecmp(token, "as") == 0)
+            {
+                tokenToAdd = (Token){
+                    .type = TOKEN_AS,
                     .text = token};
             }
             else if (strcasecmp(token, "count") == 0)
@@ -241,10 +270,9 @@ unsigned int parseSelecttemp(unsigned int current, unsigned int index, char *que
 
                 return index;
             }
-            if (strcasecmp("token", token) != 0)
-            {
-                addToTokens(tokenToAdd, tokens);
-            }
+
+            addToTokens(tokenToAdd, tokens);
+
             current = index;
         }
     }
@@ -264,6 +292,12 @@ unsigned int parseGroupBytemp(size_t current, size_t index, char *query, Tokens 
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
 
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
@@ -310,6 +344,12 @@ unsigned int parseHavingtemp(size_t current, size_t index, char *query, Tokens *
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
 
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
@@ -367,6 +407,12 @@ unsigned int parseOffsettemp(size_t current, size_t index, char *query, Tokens *
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
                 .text = token};
@@ -405,6 +451,12 @@ unsigned int parseLimittemp(size_t current, size_t index, char *query, Tokens *t
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
                 .text = token};
@@ -442,6 +494,12 @@ unsigned int parseOrderBytemp(size_t current, size_t index, char *query, Tokens 
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
                 .text = token};
@@ -513,6 +571,12 @@ unsigned int parseOptionaltemp(unsigned int current, unsigned int index, char *q
             token[length] = '\0';
             printf("token: %s\n", token);
             token = trimWhitespace(token);
+            if (token == NULL || token[0] == '\0')
+            {
+                free(token);
+                current = index;
+                continue;
+            }
             Token tokenToAdd = {
                 .type = TOKEN_ERROR,
                 .text = token};
