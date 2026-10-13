@@ -74,6 +74,7 @@ TriplePatterns *createTriplePatterns(size_t capacity);
 void addToTriplePatterns(TriplePattern triplePattern, TriplePatterns *triplePatterns);
 bool triplePatternsArrayGrow(TriplePatterns *triplePatterns);
 void freeTriplePatterns(TriplePatterns *triplePatterns);
+void getTriplePatterns(Tokens *tokens, unsigned int index, TriplePatterns *TriplePatterns);
 
 int main(void)
 {
@@ -115,6 +116,7 @@ void parseTokens(Tokens *tokens)
     orderBy orderby = {0};
     Limit limit = {0};
     Select select = {0};
+
     for (size_t i = 0; i < tokens->size; i++)
     {
         char *type = tokens->arrOfTokens[i].type;
@@ -163,6 +165,7 @@ Select getSelectTokens(Tokens *tokens, unsigned int index)
 {
     Select select = {0};
     select.variables = createVariables(2);
+    select.triplePatterns = createTriplePatterns(2);
     bool insideBraces = false;
 
     for (size_t current = index + 1; current < tokens->size; current++)
@@ -170,8 +173,11 @@ Select getSelectTokens(Tokens *tokens, unsigned int index)
         TokenType type = tokens->arrOfTokens[current].type;
         if (insideBraces == false && type == TOKEN_LPAREN)
         {
-            ProjectionExpression *expression = getProjectionExpression(tokens, current);
-            select.projectionExpressions = expression;
+            select.projectionExpressions = getProjectionExpression(tokens, current);
+        }
+        else if (type == TOKEN_DISTINCT)
+        {
+            select.isDistinct = true;
         }
         if (type == TOKEN_VARIABLE)
         {
@@ -185,6 +191,10 @@ Select getSelectTokens(Tokens *tokens, unsigned int index)
         if (type == TOKEN_LBRACE)
         {
             insideBraces = true;
+        }
+        if (insideBraces)
+        {
+            getTriplePatterns(tokens, current, select.triplePatterns);
         }
     }
 }
@@ -371,4 +381,41 @@ void freeTriplePatterns(TriplePatterns *triplePatterns)
 
     free(triplePatterns->arrOfTriplePatterns);
     free(triplePatterns);
+}
+void getTriplePatterns(Tokens *tokens, unsigned int index, TriplePatterns *TriplePatterns)
+{
+
+    /* typedef struct RDFterm
+    {
+        char *value;
+        bool isVariable;
+    } RDFterm;
+    ----------------------------------------------------
+    typedef struct TriplePattern
+    {
+        RDFterm *terms;
+        bool isOptional;
+
+    } TriplePattern; 
+    ---------------------------------------------------
+    typedef struct TriplePatterns
+    {
+        TriplePattern *arrOfTriplePatterns;
+        size_t size;
+        size_t capacity;
+    } TriplePatterns;
+    ---------------------------------------------------
+    NOW I WANNA GET THE TRIPLES, IS FIRST TERM, VARIABLE, URI, 
+    ADD IT AT FIRST, BREAK WHEN THERE IS A DOT
+    GET OPTIONAL IF OPTIONAL 
+    SHOULD I USE RECURSIVE PARSING TO GET ALL THE TRIPLES
+     */
+    int ntr = 3;
+    for (size_t current = index + 1; current < tokens->size; current++)
+    {
+        for (ntr; ntr < 0; ntr--)
+        {
+            /* code */
+        }
+    }
 }
