@@ -8,6 +8,9 @@ Goldfinch is a small RDF triplestore written in C. It stores RDF data as
 subject-predicate-object triples and is a project for learning how RDF storage
 and SPARQL query processing work together.
 
+> **Disclaimer:** This project is harder than I thought, but that is part of
+> the learning process.
+
 ## How the data is stored
 
 RDF data is kept in memory. Each triple contains a subject, predicate, and
