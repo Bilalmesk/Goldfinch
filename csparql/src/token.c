@@ -61,7 +61,7 @@ Tokens *getTokens(char *query)
             current = index;
         }
     }
-    printTokens(tokens);
+
     return tokens;
 }
 unsigned int parsePrefixes(size_t index, char *query, Prefixes *prefixes)
@@ -117,10 +117,11 @@ unsigned int parsePrefixes(size_t index, char *query, Prefixes *prefixes)
 }
 unsigned int parseSelect(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *prefixes)
 {
-
+    bool optionalExists = false;
+    int countrbraces = 0;
     for (index; index < strlen(query) + 1; index++)
     {
-        if (query[index] == ' ' || query[index] == '}')
+        if (query[index] == ' ')
         {
             size_t length = index - current;
             char *token = malloc((length + 1) * sizeof(*token));
@@ -164,6 +165,7 @@ unsigned int parseSelect(unsigned int current, unsigned int index, char *query, 
             }
             else if (strcasecmp("OPTIONAL", token) == 0)
             {
+                optionalExists = true;
                 tokenToAdd = (Token){
                     .type = TOKEN_OPTIONAL,
                     .text = token};
@@ -204,12 +206,25 @@ unsigned int parseSelect(unsigned int current, unsigned int index, char *query, 
             }
             if (endsWith(token, '}'))
             {
-                tokenToAdd = (Token){
-                    .type = TOKEN_RBRACE,
-                    .text = token};
-                addToTokens(tokenToAdd, tokens);
+                countrbraces++;
+                if (optionalExists && countrbraces > 1)
+                {
+                    tokenToAdd = (Token){
+                        .type = TOKEN_RBRACE,
+                        .text = token};
+                    addToTokens(tokenToAdd, tokens);
 
-                return index;
+                    return index;
+                }
+                else if (optionalExists == false && countrbraces == 1)
+                {
+                    tokenToAdd = (Token){
+                        .type = TOKEN_RBRACE,
+                        .text = token};
+                    addToTokens(tokenToAdd, tokens);
+
+                    return index;
+                }
             }
             addToTokens(tokenToAdd, tokens);
             current = index;
