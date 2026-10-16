@@ -75,6 +75,7 @@ void addToTriplePatterns(TriplePattern triplePattern, TriplePatterns *triplePatt
 bool triplePatternsArrayGrow(TriplePatterns *triplePatterns);
 void freeTriplePatterns(TriplePatterns *triplePatterns);
 void printTriplePatterns(const TriplePatterns *triplePatterns);
+void printSelect(const Select *select);
 unsigned int getTriplePatterns(Tokens *tokens, unsigned int index, TriplePatterns *TriplePatterns);
 unsigned int getOptionalTriplePatterns(Tokens *tokens, unsigned int index, TriplePatterns *TriplePatterns);
 unsigned int getTriple(Tokens *tokens, unsigned int index, TriplePattern *tp);
@@ -83,14 +84,14 @@ int main(void)
 {
     char query[] =
         "PREFIX foaf: <http://xmlns.com/foaf/0.1/> "
-        "SELECT DISTINCT ?person (COUNT(?friend) AS ?friendCount) "
-        "WHERE { "
-        "?person foaf:name ?name . "
-        "?personaa foaf:age ?name . "
+        "SELECT DISTINCT ?person"
+        " WHERE { "
+        " ?person foaf:name ?name . "
+        " ?personaa foaf:age ?name . "
         "OPTIONAL { "
         "?person foaf:knows ?friend . "
-        "?person foaf:knows ?friend . "
-        "?person foaf:knows ?friend . "
+        " ?person foaf:knows ?friend . "
+        " ?person foaf:knows ?friend . "
         "} "
 
         "} "
@@ -124,7 +125,7 @@ void parseTokens(Tokens *tokens)
 {
     orderBy orderby = {0};
     Limit limit = {0};
-    Select *select = malloc(sizeof(Select *));
+    Select *select = malloc(sizeof(Select));
     size_t i = 0;
     for (i; i < tokens->size; i++)
     {
@@ -134,7 +135,7 @@ void parseTokens(Tokens *tokens)
             i = getSelectTokens(tokens, i, select);
         }
     }
-    printTriplePatterns(select->triplePatterns);
+    printSelect(select);
 }
 Limit getLimit(Tokens *tokens, unsigned int index)
 {
@@ -163,26 +164,45 @@ orderBy getOrderBy(Tokens *tokens, unsigned int index)
 
     return orderby;
 }
+unsigned int rightBracesCount(Tokens *tokens)
+{
+    int count = 0;
+    for (int index = 0; index < tokens->size; index++)
+    {
+        TokenType type = tokens->arrOfTokens[index].type;
+        if(type == TOKEN_LBRACE){
+            count++;
+        }
+    }
+    return count;
+}
 unsigned int getSelectTokens(Tokens *tokens, unsigned int index, Select *select)
 {
 
     select->variables = createVariables(2);
     select->triplePatterns = createTriplePatterns(2);
-    bool insideBraces = false;
-    size_t current = index;
 
+    bool beforeWhere = true;
+    size_t current = index;
+    int rbcount = rightBracesCount(tokens);
     for (current; current < tokens->size; current++)
     {
         TokenType type = tokens->arrOfTokens[current].type;
-        if (insideBraces == false && type == TOKEN_LPAREN)
+        printf("The current token is : %s\n", tokenTypeName(type));
+        /* if (insideBraces == false && type == TOKEN_LPAREN)
         {
             select->projectionExpressions = getProjectionExpression(tokens, current);
-        }
-        else if (type == TOKEN_DISTINCT)
+        } */
+        if (type == TOKEN_DISTINCT)
         {
             select->isDistinct = true;
         }
-        if (type == TOKEN_VARIABLE)
+        if (type == TOKEN_WHERE)
+        {
+            beforeWhere = false;
+        }
+
+        if (type == TOKEN_VARIABLE && beforeWhere == true)
         {
             Variable var = {
                 0};
@@ -195,8 +215,13 @@ unsigned int getSelectTokens(Tokens *tokens, unsigned int index, Select *select)
         {
             current = getTriplePatterns(tokens, current, select->triplePatterns);
         }
-        if (type == TOKEN_OPTIONAL)
+        if (tokens->arrOfTokens[current].type == TOKEN_VARIABLE)
         {
+            current = getTriplePatterns(tokens, current, select->triplePatterns);
+        }
+        else if (type == TOKEN_OPTIONAL)
+        {
+            printf("this is after optional token; ");
             current = getOptionalTriplePatterns(tokens, current, select->triplePatterns);
         }
     }
@@ -387,6 +412,43 @@ void freeTriplePatterns(TriplePatterns *triplePatterns)
     free(triplePatterns);
 }
 
+void printSelect(const Select *select)
+{
+    if (select == NULL)
+    {
+        printf("Select is NULL.\n");
+        return;
+    }
+
+    printf("\n========== SELECT ==========\n");
+    printf("DISTINCT: %s\n", select->isDistinct ? "true" : "false");
+
+    // Print variables
+    if (select->variables != NULL && select->variables->size > 0)
+    {
+        printf("\n--- Variables (%zu) ---\n", select->variables->size);
+        for (size_t i = 0; i < select->variables->size; i++)
+        {
+            Variable v = select->variables->arrOfVariables[i];
+            printf("  var[%zu]: value=%s, isVariable=%s\n",
+                   i,
+                   v.value ? v.value : "(null)",
+                   v.isVariable ? "true" : "false");
+        }
+    }
+    else
+    {
+        printf("\n--- No variables ---\n");
+    }
+
+    // Print projection expression
+
+    // Print triple patterns
+    printTriplePatterns(select->triplePatterns);
+
+    printf("============================\n");
+}
+
 void printTriplePatterns(const TriplePatterns *triplePatterns)
 {
     if (triplePatterns == NULL)
@@ -434,16 +496,21 @@ unsigned int getOptionalTriplePatterns(Tokens *tokens, unsigned int index, Tripl
 
         if (type == TOKEN_VARIABLE || type == TOKEN_IRI)
         {
+            printf("we are inside the optional parsing");
             TriplePattern *trp = malloc(sizeof(TriplePattern *));
             trp->isOptional = true;
             current = getTriple(tokens, current, trp);
             addToTriplePatterns(*trp, TriplePatterns);
         }
 
+        if (type == TOKEN_RBRACE)
+        {
+            return current;
+        }
+
         if (type == TOKEN_DOT)
         {
-
-            return current;
+            continue;
         }
     }
 };
@@ -487,14 +554,10 @@ unsigned int getTriplePatterns(Tokens *tokens, unsigned int index, TriplePattern
             addToTriplePatterns(*trp, TriplePatterns);
         }
 
-        if (type == TOKEN_RBRACE)
-        {
-            return current;
-        }
-
         if (type == TOKEN_DOT)
         {
-            continue;
+            printf("we re inside the parser, and the returned index points on: %s\n", tokenTypeName(type));
+            return current;
         }
     }
 
@@ -506,7 +569,7 @@ unsigned int getTriple(Tokens *tokens, unsigned int index, TriplePattern *tp)
 
     tp->terms = malloc(3 * sizeof(RDFterm));
     int n = 0;
-    for (index + 1; index < tokens->size; index++)
+    for (index; index < tokens->size; index++)
     {
         RDFterm rdfterm;
         rdfterm.value = tokens->arrOfTokens[index].text;
@@ -523,7 +586,7 @@ unsigned int getTriple(Tokens *tokens, unsigned int index, TriplePattern *tp)
         tp->terms[n] = rdfterm;
         n++;
 
-        if (type == TOKEN_DOT || n == 3)
+        if (n == 3)
         {
 
             return index;

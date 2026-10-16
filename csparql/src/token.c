@@ -118,7 +118,7 @@ unsigned int parsePrefixes(size_t index, char *query, Prefixes *prefixes)
 unsigned int parseSelect(unsigned int current, unsigned int index, char *query, Tokens *tokens, Prefixes *prefixes)
 {
     bool optionalExists = false;
-    int countrbraces = 0;
+    int braceDepth = 0;
     for (index; index < strlen(query) + 1; index++)
     {
         if (query[index] == ' ')
@@ -190,11 +190,27 @@ unsigned int parseSelect(unsigned int current, unsigned int index, char *query, 
                     .type = TOKEN_DOT,
                     .text = token};
             }
-            else if (startsWith(token, '{'))
+            else if (strcmp(token, "{") == 0)
             {
+                braceDepth++;
                 tokenToAdd = (Token){
                     .type = TOKEN_LBRACE,
                     .text = token};
+            }
+            else if (strcmp(token, "}") == 0)
+            {
+                braceDepth--;
+                tokenToAdd = (Token){
+                    .type = TOKEN_RBRACE,
+                    .text = token};
+                addToTokens(tokenToAdd, tokens);
+
+                if (braceDepth <= 0)
+                {
+                    return index;
+                }
+                current = index;
+                continue;
             }
             else if (isItQname(token))
             {
@@ -204,29 +220,10 @@ unsigned int parseSelect(unsigned int current, unsigned int index, char *query, 
                     .type = TOKEN_IRI,
                     .text = iri};
             }
-            if (endsWith(token, '}'))
+            if (tokenToAdd.text != NULL && tokenToAdd.text[0] != '\0')
             {
-                countrbraces++;
-                if (optionalExists && countrbraces > 1)
-                {
-                    tokenToAdd = (Token){
-                        .type = TOKEN_RBRACE,
-                        .text = token};
-                    addToTokens(tokenToAdd, tokens);
-
-                    return index;
-                }
-                else if (optionalExists == false && countrbraces == 1)
-                {
-                    tokenToAdd = (Token){
-                        .type = TOKEN_RBRACE,
-                        .text = token};
-                    addToTokens(tokenToAdd, tokens);
-
-                    return index;
-                }
+                addToTokens(tokenToAdd, tokens);
             }
-            addToTokens(tokenToAdd, tokens);
             current = index;
         }
     }
@@ -715,7 +712,7 @@ static unsigned int legacyParseSelect(unsigned int current, unsigned int index, 
                     .type = TOKEN_IRI,
                     .text = iri};
             }
-            if (endsWith(token, '}'))
+            if (strcasecmp(token, "}") == 0)
             {
                 tokenToAdd = (Token){
                     .type = TOKEN_RBRACE,
