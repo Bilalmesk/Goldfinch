@@ -208,11 +208,24 @@ static int test_missing_terms(void)
     return 0;
 }
 
-static int test_null_store(void)
+static int test_null_inputs(void)
 {
-    Results *results = getTriples(NULL, NULL, NULL, NULL, true, true, true);
+    Triplestore empty = {0};
+    Triple triple = {1, 2, 3};
+    Results no_results = {0};
 
-    CHECK(results == NULL);
+    CHECK(getTriples(NULL, NULL, NULL, NULL, true, true, true) == NULL);
+    CHECK(getTriples(&empty, NULL, NULL, NULL, true, true, true) == NULL);
+
+    addToTriples(NULL, triple);
+    free_results(NULL);
+
+    CHECK(triples_grow(NULL) == false);
+
+    no_results.capacity = SIZE_MAX / 2 + 1;
+    CHECK(triples_grow(&no_results) == false);
+    CHECK(no_results.triples == NULL);
+
     return 0;
 }
 
@@ -242,7 +255,7 @@ int main(void)
     RUN(test_predicate_object_lookup);
     RUN(test_all_variables_growth);
     RUN(test_missing_terms);
-    RUN(test_null_store);
+    RUN(test_null_inputs);
 
 #undef RUN
 
