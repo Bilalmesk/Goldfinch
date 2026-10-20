@@ -18,8 +18,9 @@ make clean
 make SANITIZE=1
 ```
 
-The sanitizer build is supported by GCC on Linux and MSYS2. If your
-toolchain does not provide the sanitizer runtimes, use the default build.
+The sanitizer build requires a toolchain that ships the ASan/UBSan runtimes
+(for example, GCC on Linux). If your toolchain does not provide them, use the
+default build.
 
 ## What is covered
 
